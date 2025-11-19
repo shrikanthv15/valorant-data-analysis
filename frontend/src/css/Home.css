@@ -1,0 +1,221 @@
+/* Valorant Champions 2025 Theme */
+
+:root {
+  --gold: #d4af37;
+  --gold-bright: #ffcc4d;
+  --dark: #0e0e0e;
+  --gray: #1a1a1a;
+  --light-gray: #2b2b2b;
+  --accent-green: #4ade80;
+  scale: 1;
+  width: 100vw;
+}
+
+body {
+  background-color: var(--dark);
+  color: white;
+  font-family: 'Rajdhani', 'Orbitron', sans-serif;
+  letter-spacing: 0.5px;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Main Container */
+.tournament-container {
+  background: radial-gradient(circle at 50% 0%, #161616, #000);
+  min-height: 100vh;
+  padding-bottom: 4rem;
+}
+
+/* Header */
+.tournament-header {
+  text-align: center;
+  padding: 3rem 1rem 2rem 1rem;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 2px solid var(--gold);
+  background: linear-gradient(160deg, #000 40%, #111 100%);
+}
+
+.tournament-header::before {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  top: 0;
+  left: -10%;
+}
+
+.tournament-header h1 {
+  font-size: 2.8rem;
+  color: var(--gold-bright);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+}
+
+.tournament-header p {
+  color: #aaa;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+/* Groups Layout */
+.groups-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
+  gap: 3rem;
+  padding: 2rem 3rem;
+  
+ 
+}
+
+/* Group Box */
+.group-bracket {
+  position: relative;
+  background: linear-gradient(180deg, #111 0%, #090909 100%);
+  border: 2px solid var(--gray);
+  border-radius: 8px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.05);
+  transition: 0.3s ease;
+
+  
+}
+
+.group-bracket:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+  transform: translateY(-3px);
+}
+
+.group-header {
+  text-align: center;
+  border-bottom: 1px solid var(--gray);
+  margin-bottom: 1.5rem;
+}
+
+.group-header h3 {
+  color: var(--gold);
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Round Layout */
+.bracket-rounds {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.round {
+  flex: 1;
+}
+
+.round-title {
+  text-align: center;
+  color: var(--gold);
+  font-size: 0.9rem;
+  margin-bottom: 0.8rem;
+  text-transform: uppercase;
+}
+
+.matches {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Match Cards */
+.match-card {
+  background: linear-gradient(90deg, #181818, #121212);
+  border: 1px solid #333;
+  border-left: 4px solid var(--gold);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.match-card:hover {
+  transform: scale(1.02);
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* Team Layout */
+.team-slot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid #222;
+}
+
+.team-slot:last-child {
+  border-bottom: none;
+}
+
+.team {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.team-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ddd;
+  text-transform: uppercase;
+}
+
+.team-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.team.winner {
+  background: linear-gradient(90deg, #273217, #1f2612);
+  color: #fff;
+}
+
+/* Qualified */
+.qualified-round {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.qualified-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, #1b2b15, #23381b);
+  border: 2px solid var(--accent-green);
+  border-radius: 5px;
+  padding: 0.8rem 1.2rem;
+  color: var(--accent-green);
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.qualified-card:hover {
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.5);
+  background: linear-gradient(135deg, #23381b, #2e4622);
+}
+
+/* Animation and responsive */
+@media (max-width: 768px) {
+  .groups-container {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+  .bracket-rounds {
+    flex-direction: column;
+  }
+}

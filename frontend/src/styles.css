@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap');
+
+:root {
+  --bg: #0b0f19;
+  --panel: #121826;
+  --accent: #ff4655; /* Valorant red */
+  --accent-2: #6c5ce7;
+  --text: #e6e9ef;
+  --muted: #9aa4b2;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Rajdhani', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+.app { min-height: 100vh; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+.panel { background: linear-gradient(160deg, #0f1424 0%, #0b0f19 100%); border: 1px solid #1f2a44; border-radius: 14px; padding: 16px; }
+
+.nav { position: sticky; top: 0; z-index: 20; background: rgba(11, 15, 25, 0.75); backdrop-filter: blur(10px); border-bottom: 1px solid #1f2a44; }
+.nav-inner { display: flex; align-items: center; gap: 16px; padding: 12px 24px; max-width: 1200px; margin: 0 auto; }
+.logo { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 700; letter-spacing: 1px; }
+.logo-dot { width: 10px; height: 10px; background: var(--accent); border-radius: 50%; }
+.spacer { flex: 1; }
+.nav a { color: var(--muted); text-decoration: none; padding: 8px 12px; border-radius: 8px; }
+.nav a.active, .nav a:hover { color: var(--text); background: #161c2d; }
+
+.grid { display: grid; gap: 16px; }
+.grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.card { background: var(--panel); border: 1px solid #1f2a44; border-radius: 14px; padding: 16px; }
+.card h3 { margin: 0 0 6px 0; }
+.muted { color: var(--muted); }
+.btn { background: var(--accent); color: white; padding: 10px 16px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; }
+.btn.secondary { background: #222a41; color: var(--text); }
+
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi .stat { background: #161c2d; border: 1px solid #1f2a44; border-radius: 12px; padding: 14px; }
+.kpi .label { color: var(--muted); font-size: 12px; }
+.kpi .value { font-size: 22px; font-weight: 700; }
+
+.title { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px 0; }
+.title .bar { width: 4px; height: 20px; background: var(--accent); border-radius: 2px; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: 10px; border-bottom: 1px solid #1f2a44; }
+
+

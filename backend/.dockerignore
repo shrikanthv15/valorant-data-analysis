@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.venv
+venv
+valorant_data.db
+ml_model.joblib
+main.ipynb
+
