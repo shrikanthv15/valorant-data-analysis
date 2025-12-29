@@ -17,6 +17,8 @@ export interface PlayerVsEnemy {
   Difference: number;
   "Player Team": string;
   "Enemy Team": string;
+  Map: string;
+  "Kill Type": string;
 }
 
 export interface Maps {
@@ -66,4 +68,38 @@ export interface PlayersData {
   agent: string;
   acs: number;
   maps: string[];
+}
+
+export interface MapStats {
+  map: string;
+  matches_played: number;
+  total_rounds: number;
+  total_kills: number;
+  total_deaths: number;
+  total_assists: number;
+  average_rating: number;
+  average_acs: number;
+  agents_played: string[];
+  average_kd: number;
+  average_adr: number;
+  average_kpr: number;
+  average_apr: number;
+  average_fkpr: number;
+  average_fdpr: number;
+  average_headshot_pct: number;
+  kd_ratio: number;
+}
+
+export interface PlayerProfile {
+  id: string;
+  name: string;
+  current_team: string;
+  average_rating: number;
+  average_acs: number;
+  total_rounds: number;
+  total_kills: number;
+  total_deaths: number;
+  total_assists: number;
+  kd_ratio: number;
+  map_stats: MapStats[];
 }

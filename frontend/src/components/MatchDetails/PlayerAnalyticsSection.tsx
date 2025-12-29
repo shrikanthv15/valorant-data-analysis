@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Plotly from 'plotly.js-dist-min';
 import { getPlayerTimeseries } from '../../lib/api';
 import { PlayerStat } from './types';
-import { data } from 'framer-motion/client';
+import '../../css/PlayerAnalytics.css';
 
 interface PlayerAnalyticsSectionProps {
   allPlayers: PlayerStat[];
@@ -18,21 +18,20 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
 
   const loadPlayerTimeseries = async (playerName: string) => {
     if (selectedPlayer === playerName && timeseriesData) return;
-    
+
     setSelectedPlayer(playerName);
     setLoadingTimeseries(true);
-    
+
     try {
       const data = await getPlayerTimeseries(playerName);
       setTimeseriesData(data);
-      
-      // ✅ Extract available maps
+
       if (data.timeseries?.map_performance) {
-        const maps = [...new Set(data.timeseries.map_performance.map((m: any) => m.map))];
+        const maps = [...new Set(data.timeseries.map_performance.map((m: any) => m.map))] as string[];
         setAvailableMaps(maps);
-        setSelectedMap(maps[0] || null); // Select first map by default
+        setSelectedMap(maps[0] || null);
       }
-      
+
       setTimeout(() => {
         if (data.timeseries) {
           createPerformanceChart(data.timeseries);
@@ -40,7 +39,7 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
           createRoundsChart(data.timeseries);
         }
       }, 100);
-      
+
       setLoadingTimeseries(false);
     } catch (error) {
       console.error('Error loading timeseries:', error);
@@ -48,13 +47,27 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
     }
   };
 
-  // ✅ Update charts when map selection changes
   useEffect(() => {
     if (timeseriesData?.timeseries && selectedMap) {
       createMapSpecificCharts(timeseriesData.timeseries, selectedMap);
     }
   }, [selectedMap]);
-  console.log(timeseriesData);
+
+  const commonLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { family: 'Rajdhani, sans-serif', color: '#b0b0b0' },
+    xaxis: {
+      gridcolor: 'rgba(255,255,255,0.05)',
+      zerolinecolor: 'rgba(255,255,255,0.1)',
+    },
+    yaxis: {
+      gridcolor: 'rgba(255,255,255,0.05)',
+      zerolinecolor: 'rgba(255,255,255,0.1)',
+    },
+    margin: { t: 30, r: 20, l: 40, b: 40 },
+  } as Partial<Plotly.Layout>;
+
   const createPerformanceChart = (timeseries: any) => {
     const matchProgression = timeseries.match_progression;
     if (!matchProgression || matchProgression.length === 0) return;
@@ -64,73 +77,59 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
       y: matchProgression.map((m: any) => m.kills),
       mode: 'lines+markers',
       name: 'Kills',
-      line: { color: '#4ade80', width: 3 },
-      marker: { size: 8 }
+      line: { color: '#4ade80', width: 3, shape: 'spline' },
+      marker: { size: 8, color: '#4ade80', line: { color: '#fff', width: 1 } }
     };
-    
+
     const trace2 = {
       x: matchProgression.map((_: any, i: number) => i + 1),
       y: matchProgression.map((m: any) => m.deaths),
       mode: 'lines+markers',
       name: 'Deaths',
-      line: { color: '#ff4655', width: 3 },
-      marker: { size: 8 }
+      line: { color: '#ff4655', width: 3, shape: 'spline' },
+      marker: { size: 8, color: '#ff4655', line: { color: '#fff', width: 1 } }
     };
-    
+
     const trace3 = {
       x: matchProgression.map((_: any, i: number) => i + 1),
       y: matchProgression.map((m: any) => m.kd_ratio),
       mode: 'lines+markers',
       name: 'K/D Ratio',
       yaxis: 'y2',
-      line: { color: '#ffd700', width: 3 },
-      marker: { size: 8 }
+      line: { color: '#ffd700', width: 3, dash: 'dot' },
+      marker: { size: 6, color: '#ffd700' }
     };
 
     const layout = {
-      title: {
-        text: `${selectedPlayer} - Tournament Performance`,
-        font: { color: '#ffffff', size: 16 }
-      },
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#ffffff' },
+      ...commonLayout,
+      title: false,
       xaxis: {
-        title: 'Match Number',
-        gridcolor: 'rgba(255,255,255,0.1)',
+        ...commonLayout.xaxis,
+        title: 'Match Sequence',
         tickmode: 'array',
         tickvals: matchProgression.map((_: any, i: number) => i + 1),
         ticktext: matchProgression.map((m: any) => m.match_type)
       },
-      yaxis: {
-        title: 'Kills/Deaths',
-        gridcolor: 'rgba(255,255,255,0.1)'
-      },
+      yaxis: { ...commonLayout.yaxis, title: 'Count' },
       yaxis2: {
-        title: 'K/D Ratio',
+        title: 'K/D',
         overlaying: 'y',
         side: 'right',
-        gridcolor: 'rgba(255,255,255,0.1)'
+        gridcolor: 'transparent',
+        zeroline: false
       },
       hovermode: 'x unified',
       showlegend: true,
-      legend: {
-        font: { color: '#ffffff' }
-      }
+      legend: { orientation: 'h', y: 1.1 }
     };
 
-    const config = {
-      responsive: true,
-      displayModeBar: false
-    };
-
-    Plotly.newPlot('performance-chart', [trace1, trace2, trace3], layout, config);
+    Plotly.newPlot('performance-chart', [trace1, trace2, trace3], layout, { responsive: true, displayModeBar: false });
   };
 
   const createMapHeatmap = (timeseries: any) => {
     const mapPerformance = timeseries.map_performance;
     if (!mapPerformance || mapPerformance.length === 0) return;
-    
+
     const mapStats: any = {};
     mapPerformance.forEach((map: any) => {
       if (!mapStats[map.map]) {
@@ -140,10 +139,10 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
       mapStats[map.map].deaths.push(map.deaths);
       mapStats[map.map].kd.push(map.kd_ratio);
     });
-    
+
     const maps = Object.keys(mapStats);
     const metrics = ['Avg Kills', 'Avg Deaths', 'Avg K/D'];
-    
+
     const z = maps.map(map => [
       mapStats[map].kills.reduce((a: number, b: number) => a + b, 0) / mapStats[map].kills.length,
       mapStats[map].deaths.reduce((a: number, b: number) => a + b, 0) / mapStats[map].deaths.length,
@@ -155,153 +154,108 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
       x: metrics,
       y: maps,
       type: 'heatmap',
-      colorscale: 'Viridis',
-      hoverongaps: false,
+      colorscale: [
+        [0, '#0a0a0a'],
+        [0.5, '#1a2a4a'],
+        [1, '#00d4ff']
+      ],
+      xgap: 2,
+      ygap: 2,
       hovertemplate: '<b>%{y}</b><br>%{x}: %{z:.2f}<extra></extra>'
     };
 
     const layout = {
-      title: {
-        text: 'Map Performance Heatmap',
-        font: { color: '#ffffff', size: 16 }
-      },
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#ffffff' },
-      xaxis: { 
-        title: 'Metrics',
-        gridcolor: 'rgba(255,255,255,0.1)'
-      },
-      yaxis: { 
-        title: 'Maps',
-        gridcolor: 'rgba(255,255,255,0.1)'
-      }
+      ...commonLayout,
+      title: false,
+      xaxis: { ...commonLayout.xaxis, side: 'top' },
+      yaxis: { ...commonLayout.yaxis }
     };
 
-    const config = {
-      responsive: true,
-      displayModeBar: false
-    };
-
-    Plotly.newPlot('map-heatmap', [trace], layout, config);
+    Plotly.newPlot('map-heatmap', [trace], layout, { responsive: true, displayModeBar: false });
   };
 
-  // ✅ NEW: Create map-specific charts
   const createMapSpecificCharts = (timeseries: any, mapName: string) => {
     const roundData = timeseries.round_by_round.filter((r: any) => r.map === mapName);
-    
     if (!roundData || roundData.length === 0) return;
-    
+
     const trace = {
       x: roundData.map((r: any) => r.round_number),
       y: roundData.map((r: any) => r.kills),
       mode: 'markers',
       marker: {
-        size: roundData.map((r: any) => r.multi_kill ? 15 : 8),
-        color: roundData.map((r: any) => 
-          r.clutch_situation ? '#ffd700' : 
-          r.multi_kill ? '#ff4655' : 
-          '#4ade80'
+        size: roundData.map((r: any) => r.multi_kill ? 14 : 8),
+        color: roundData.map((r: any) =>
+          r.clutch_situation ? '#ffd700' :
+            r.multi_kill ? '#ff4655' :
+              '#4ade80'
         ),
-        line: { width: 2, color: '#ffffff' }
+        line: { width: 1, color: '#fff' },
+        opacity: 0.8
       },
-      text: roundData.map((r: any) => 
-        `Round ${r.round_number}<br>Match: ${r.match_name}<br>Kills: ${r.kills}<br>Deaths: ${r.deaths}${r.multi_kill ? '<br>🔥 Multi-kill!' : ''}${r.clutch_situation ? '<br>👑 Clutch!' : ''}`
+      text: roundData.map((r: any) =>
+        `Round ${r.round_number}<br>Kills: ${r.kills}<br>Deaths: ${r.deaths}${r.multi_kill ? '<br>🔥 Multi-kill' : ''}${r.clutch_situation ? '<br>👑 Clutch' : ''}`
       ),
       hovertemplate: '%{text}<extra></extra>',
-      name: 'Round Performance'
+      name: 'Rounds'
     };
 
     const layout = {
+      ...commonLayout,
       title: {
-        text: `Round-by-Round Impact on ${mapName}`,
-        font: { color: '#ffffff', size: 16 }
+        text: `Impact on ${mapName}`,
+        font: { size: 14, color: '#b0b0b0' }
       },
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#ffffff' },
-      xaxis: {
-        title: 'Round Number',
-        gridcolor: 'rgba(255,255,255,0.1)'
-      },
-      yaxis: {
-        title: 'Kills per Round',
-        gridcolor: 'rgba(255,255,255,0.1)'
-      },
+      xaxis: { ...commonLayout.xaxis, title: 'Round' },
+      yaxis: { ...commonLayout.yaxis, title: 'Kills' },
       showlegend: false
     };
 
-    const config = {
-      responsive: true,
-      displayModeBar: false
-    };
-
-    Plotly.newPlot('rounds-chart', [trace], layout, config);
+    Plotly.newPlot('rounds-chart', [trace], layout, { responsive: true, displayModeBar: false });
   };
 
   const createRoundsChart = (timeseries: any) => {
     if (selectedMap) {
       createMapSpecificCharts(timeseries, selectedMap);
     } else {
-      // Show all rounds if no map selected
       const roundData = timeseries.round_by_round;
       if (!roundData || roundData.length === 0) return;
-      
+
       const trace = {
         x: roundData.map((_: any, i: number) => i + 1),
         y: roundData.map((r: any) => r.kills),
         mode: 'markers',
         marker: {
-          size: roundData.map((r: any) => r.multi_kill ? 12 : 6),
-          color: roundData.map((r: any) => 
-            r.clutch_situation ? '#ffd700' : 
-            r.multi_kill ? '#ff4655' : 
-            '#4ade80'
+          size: roundData.map((r: any) => r.multi_kill ? 10 : 5),
+          color: roundData.map((r: any) =>
+            r.clutch_situation ? '#ffd700' :
+              r.multi_kill ? '#ff4655' :
+                '#4ade80'
           ),
-          line: { width: 1, color: '#ffffff' }
+          opacity: 0.6
         },
-        text: roundData.map((r: any) => 
-          `Round ${r.round_number}<br>Map: ${r.map}<br>Kills: ${r.kills}<br>Deaths: ${r.deaths}${r.multi_kill ? '<br>🔥 Multi-kill!' : ''}${r.clutch_situation ? '<br>👑 Clutch!' : ''}`
-        ),
-        hovertemplate: '%{text}<extra></extra>',
-        name: 'Round Performance'
+        text: roundData.map((r: any) => `Map: ${r.map}<br>Kills: ${r.kills}`),
+        hovertemplate: '%{text}<extra></extra>'
       };
 
       const layout = {
-        title: {
-          text: 'Round-by-Round Impact (All Maps)',
-          font: { color: '#ffffff', size: 16 }
-        },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#ffffff' },
-        xaxis: {
-          title: 'Round Sequence',
-          gridcolor: 'rgba(255,255,255,0.1)'
-        },
-        yaxis: {
-          title: 'Kills per Round',
-          gridcolor: 'rgba(255,255,255,0.1)'
-        },
+        ...commonLayout,
+        title: { text: 'All Rounds Overview', font: { size: 14, color: '#b0b0b0' } },
+        xaxis: { ...commonLayout.xaxis, title: 'Round Sequence' },
+        yaxis: { ...commonLayout.yaxis, title: 'Kills' },
         showlegend: false
       };
 
-      const config = {
-        responsive: true,
-        displayModeBar: false
-      };
-
-      Plotly.newPlot('rounds-chart', [trace], layout, config);
+      Plotly.newPlot('rounds-chart', [trace], layout, { responsive: true, displayModeBar: false });
     }
   };
 
   return (
-    <section className="content-section timeseries-section">
-      <h2 className="section-title">📈 Player Performance Analytics</h2>
-      
+    <section className="timeseries-section">
+      <h2 className="section-title">📈 Player Analytics</h2>
+
       <div className="timeseries-container">
         <div className="player-selector">
-          <h3 className="selector-title">Select Player for Analysis</h3>
+          <h3 className="selector-title">Select Player</h3>
           <div className="players-grid">
             {allPlayers.map((player, idx) => (
               <button
@@ -323,10 +277,9 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
         </div>
 
         {loadingTimeseries && (
-          <div className="loading-indicator">Loading player analytics...</div>
+          <div className="loading-indicator">Loading analytics data...</div>
         )}
 
-        {/* ✅ NEW: Map selector */}
         {timeseriesData && availableMaps.length > 0 && (
           <div className="map-selector">
             <h3 className="selector-title">Filter by Map</h3>
@@ -353,17 +306,17 @@ const PlayerAnalyticsSection: React.FC<PlayerAnalyticsSectionProps> = ({ allPlay
         {timeseriesData && !loadingTimeseries && (
           <div className="timeseries-charts">
             <div className="chart-container">
-              <h4 className="chart-title">🎯 Performance Progression</h4>
+              <h4 className="chart-title">🎯 Performance Trend</h4>
               <div id="performance-chart" className="plotly-chart"></div>
             </div>
 
             <div className="chart-container">
-              <h4 className="chart-title">🗺️ Map Performance Matrix</h4>
+              <h4 className="chart-title">🗺️ Map Matrix</h4>
               <div id="map-heatmap" className="plotly-chart"></div>
             </div>
 
             <div className="chart-container">
-              <h4 className="chart-title">⚔️ Round-by-Round Impact</h4>
+              <h4 className="chart-title">⚔️ Round Impact</h4>
               <div id="rounds-chart" className="plotly-chart"></div>
             </div>
           </div>

@@ -9,21 +9,42 @@ class PlayerService:
     
     def get_all_players_with_map_stats(self, match_id):
         """Get all players with map-segregated statistics"""
-        print(match_id)
+        print(f"Fetching players for match_id: {match_id}")
         scores_df = get_data('scores')
-        kills_df = get_data('kills')
-        draft_phase_df = get_data('draft_phase')
-        
-        match_row = scores_df[scores_df["match_id"] == match_id]
-        print(match_row['Match Type'])
         players_stats_df = get_data('players_stats')
-
         maps_played_df = get_data('maps_played')
-        unique_players = players_stats_df['Player'].unique()
+        
+        # Get match details to filter players and maps
+        match_row = scores_df[scores_df['match_id'] == match_id]
+        if match_row.empty:
+            print(f"❌ [PLAYER_SERVICE] Match ID {match_id} not found")
+            return []
+            
+        match_row = match_row.iloc[0]
+        tournament = match_row['Tournament']
+        stage = match_row['Stage']
+        match_type = match_row['Match Type']
+        match_name = match_row['Match Name']
+        team_a = match_row['Team A']
+        team_b = match_row['Team B']
+        
+        print(f"📊 Match Details: {match_name} ({match_type}) - {team_a} vs {team_b}")
+        
+        # Filter players to only those in the playing teams
+        # This prevents fetching every player who played in this tournament stage
+        relevant_players_df = players_stats_df[
+            (players_stats_df['Tournament'] == tournament) &
+            (players_stats_df['Stage'] == stage) &
+            (players_stats_df['Match Type'] == match_type) &
+            (players_stats_df['Teams'].isin([team_a, team_b]))
+        ]
+        
+        unique_players = relevant_players_df['Player'].unique()
         players_list = []
         
+
         for player_name in unique_players:
-            player_data = players_stats_df[players_stats_df['Player'] == player_name]
+            player_data = relevant_players_df[relevant_players_df['Player'] == player_name]
             
             # Get player's team (most recent or most common)
             teams = player_data['Teams'].value_counts()
@@ -44,7 +65,7 @@ class PlayerService:
                 avg_acs = 0
             
             # Get map-specific stats
-            map_stats = self._get_player_map_stats(player_name, player_data, maps_played_df)
+            map_stats = self._get_player_map_stats(player_name, player_data, maps_played_df, match_name)
          
             player_info = {
                 'id': player_name.lower().replace(' ', '-'),
@@ -65,17 +86,14 @@ class PlayerService:
         # Sort by average rating descending
         players_list.sort(key=lambda x: x['average_rating'], reverse=True)
         
-        print(f"✅ [PLAYER_SERVICE] Returning {len(players_list)} players")
-        print(f"📊 [PLAYER_SERVICE] Sample player: {players_list[0]['name'] if players_list else 'None'} with {len(players_list[0]['map_stats']) if players_list else 0} maps")
-        
+       
         return players_list
     
-    def _get_player_map_stats(self, player_name, player_data, maps_played_df):
+    def _get_player_map_stats(self, player_name, player_data, maps_played_df, match_name):
         """Get map-segregated statistics for a player"""
         map_stats = {}
         processed_rows = 0
         
-        # Group player data by Tournament, Stage, Match Type to match with maps_played
         for idx, row in player_data.iterrows():
             processed_rows += 1
             tournament = row['Tournament']
@@ -96,24 +114,26 @@ class PlayerService:
             fdpr = row.get('First Deaths Per Round', 0)
             headshot_pct = row.get('Headshot %', '0%').replace('%', '')
             
-            # Find matching maps from maps_played
+            # Find which map this row corresponds to
+            # We match based on Tournament, Stage, Match Type AND Match Name
             matching_maps = maps_played_df[
                 (maps_played_df['Tournament'] == tournament) &
                 (maps_played_df['Stage'] == stage) &
-                (maps_played_df['Match Type'] == match_type)
+                (maps_played_df['Match Type'] == match_type) &
+                (maps_played_df['Match Name'] == match_name)
             ]
             
             if matching_maps.empty and processed_rows <= 3:
-                print(f"    ⚠️ [MAP_STATS] No matching maps for {player_name}: {tournament} | {stage} | {match_type}")
+                print(f"    ⚠️ [MAP_STATS] No matching maps for {player_name}: {tournament} | {stage} | {match_type} | {match_name}")
             
             # If we have a single agent (not comma-separated), try to match to specific map
             # Otherwise, aggregate across all maps for this match
             if ',' not in str(agents) and not matching_maps.empty:
                 # Single agent - likely single map performance
-                for map_name in matching_maps['Map'].unique():
-                    if map_name not in map_stats:
-                        map_stats[map_name] = {
-                            'map': map_name,
+                for map_name_val in matching_maps['Map'].unique():
+                    if map_name_val not in map_stats:
+                        map_stats[map_name_val] = {
+                            'map': map_name_val,
                             'matches_played': 0,
                             'total_rounds': 0,
                             'total_kills': 0,
@@ -133,29 +153,29 @@ class PlayerService:
                             'headshot_pcts': []
                         }
                     
-                    map_stats[map_name]['matches_played'] += 1
-                    map_stats[map_name]['total_rounds'] += rounds_played
-                    map_stats[map_name]['total_kills'] += kills
-                    map_stats[map_name]['total_deaths'] += deaths
-                    map_stats[map_name]['total_assists'] += assists
-                    map_stats[map_name]['ratings'].append(float(rating) if pd.notna(rating) else 0)
-                    map_stats[map_name]['acs_values'].append(float(acs) if pd.notna(acs) else 0)
-                    map_stats[map_name]['kd_ratios'].append(float(kd_ratio))
-                    map_stats[map_name]['adr_values'].append(float(adr) if pd.notna(adr) else 0)
-                    map_stats[map_name]['kpr_values'].append(float(kpr) if pd.notna(kpr) else 0)
-                    map_stats[map_name]['apr_values'].append(float(apr) if pd.notna(apr) else 0)
-                    map_stats[map_name]['fkpr_values'].append(float(fkpr) if pd.notna(fkpr) else 0)
-                    map_stats[map_name]['fdpr_values'].append(float(fdpr) if pd.notna(fdpr) else 0)
-                    map_stats[map_name]['headshot_pcts'].append(float(headshot_pct) if pd.notna(headshot_pct) and headshot_pct != '' else 0)
+                    map_stats[map_name_val]['matches_played'] += 1
+                    map_stats[map_name_val]['total_rounds'] += rounds_played
+                    map_stats[map_name_val]['total_kills'] += kills
+                    map_stats[map_name_val]['total_deaths'] += deaths
+                    map_stats[map_name_val]['total_assists'] += assists
+                    map_stats[map_name_val]['ratings'].append(float(rating) if pd.notna(rating) else 0)
+                    map_stats[map_name_val]['acs_values'].append(float(acs) if pd.notna(acs) else 0)
+                    map_stats[map_name_val]['kd_ratios'].append(float(kd_ratio))
+                    map_stats[map_name_val]['adr_values'].append(float(adr) if pd.notna(adr) else 0)
+                    map_stats[map_name_val]['kpr_values'].append(float(kpr) if pd.notna(kpr) else 0)
+                    map_stats[map_name_val]['apr_values'].append(float(apr) if pd.notna(apr) else 0)
+                    map_stats[map_name_val]['fkpr_values'].append(float(fkpr) if pd.notna(fkpr) else 0)
+                    map_stats[map_name_val]['fdpr_values'].append(float(fdpr) if pd.notna(fdpr) else 0)
+                    map_stats[map_name_val]['headshot_pcts'].append(float(headshot_pct) if pd.notna(headshot_pct) and headshot_pct != '' else 0)
                     
-                    if agents not in map_stats[map_name]['agents_played']:
-                        map_stats[map_name]['agents_played'].append(str(agents))
+                    if agents not in map_stats[map_name_val]['agents_played']:
+                        map_stats[map_name_val]['agents_played'].append(str(agents))
             else:
                 # Multiple agents or aggregated data - distribute across all maps in match
-                for map_name in matching_maps['Map'].unique():
-                    if map_name not in map_stats:
-                        map_stats[map_name] = {
-                            'map': map_name,
+                for map_name_val in matching_maps['Map'].unique():
+                    if map_name_val not in map_stats:
+                        map_stats[map_name_val] = {
+                            'map': map_name_val,
                             'matches_played': 0,
                             'total_rounds': 0,
                             'total_kills': 0,
@@ -177,29 +197,29 @@ class PlayerService:
                     
                     # Distribute stats proportionally across maps
                     num_maps = len(matching_maps['Map'].unique())
-                    map_stats[map_name]['matches_played'] += 1
-                    map_stats[map_name]['total_rounds'] += rounds_played / num_maps if num_maps > 0 else rounds_played
-                    map_stats[map_name]['total_kills'] += kills / num_maps if num_maps > 0 else kills
-                    map_stats[map_name]['total_deaths'] += deaths / num_maps if num_maps > 0 else deaths
-                    map_stats[map_name]['total_assists'] += assists / num_maps if num_maps > 0 else assists
-                    map_stats[map_name]['ratings'].append(float(rating) if pd.notna(rating) else 0)
-                    map_stats[map_name]['acs_values'].append(float(acs) if pd.notna(acs) else 0)
-                    map_stats[map_name]['kd_ratios'].append(float(kd_ratio))
-                    map_stats[map_name]['adr_values'].append(float(adr) if pd.notna(adr) else 0)
-                    map_stats[map_name]['kpr_values'].append(float(kpr) if pd.notna(kpr) else 0)
-                    map_stats[map_name]['apr_values'].append(float(apr) if pd.notna(apr) else 0)
-                    map_stats[map_name]['fkpr_values'].append(float(fkpr) if pd.notna(fkpr) else 0)
-                    map_stats[map_name]['fdpr_values'].append(float(fdpr) if pd.notna(fdpr) else 0)
-                    map_stats[map_name]['headshot_pcts'].append(float(headshot_pct) if pd.notna(headshot_pct) and headshot_pct != '' else 0)
+                    map_stats[map_name_val]['matches_played'] += 1
+                    map_stats[map_name_val]['total_rounds'] += rounds_played / num_maps if num_maps > 0 else rounds_played
+                    map_stats[map_name_val]['total_kills'] += kills / num_maps if num_maps > 0 else kills
+                    map_stats[map_name_val]['total_deaths'] += deaths / num_maps if num_maps > 0 else deaths
+                    map_stats[map_name_val]['total_assists'] += assists / num_maps if num_maps > 0 else assists
+                    map_stats[map_name_val]['ratings'].append(float(rating) if pd.notna(rating) else 0)
+                    map_stats[map_name_val]['acs_values'].append(float(acs) if pd.notna(acs) else 0)
+                    map_stats[map_name_val]['kd_ratios'].append(float(kd_ratio))
+                    map_stats[map_name_val]['adr_values'].append(float(adr) if pd.notna(adr) else 0)
+                    map_stats[map_name_val]['kpr_values'].append(float(kpr) if pd.notna(kpr) else 0)
+                    map_stats[map_name_val]['apr_values'].append(float(apr) if pd.notna(apr) else 0)
+                    map_stats[map_name_val]['fkpr_values'].append(float(fkpr) if pd.notna(fkpr) else 0)
+                    map_stats[map_name_val]['fdpr_values'].append(float(fdpr) if pd.notna(fdpr) else 0)
+                    map_stats[map_name_val]['headshot_pcts'].append(float(headshot_pct) if pd.notna(headshot_pct) and headshot_pct != '' else 0)
                     
                     # Add unique agents
                     for agent in str(agents).split(','):
                         agent_clean = agent.strip()
-                        if agent_clean and agent_clean not in map_stats[map_name]['agents_played']:
-                            map_stats[map_name]['agents_played'].append(agent_clean)
+                        if agent_clean and agent_clean not in map_stats[map_name_val]['agents_played']:
+                            map_stats[map_name_val]['agents_played'].append(agent_clean)
         
         # Calculate averages for each map
-        for map_name, stats in map_stats.items():
+        for map_name_val, stats in map_stats.items():
             if stats['matches_played'] > 0:
                 stats['average_rating'] = round(sum(stats['ratings']) / len(stats['ratings']), 2) if stats['ratings'] else 0
                 stats['average_acs'] = round(sum(stats['acs_values']) / len(stats['acs_values']), 2) if stats['acs_values'] else 0
@@ -213,29 +233,12 @@ class PlayerService:
                 stats['kd_ratio'] = round(stats['total_kills'] / max(stats['total_deaths'], 1), 2)
             
             # Remove intermediate lists
-            if 'ratings' in stats:
-                del stats['ratings']
-            if 'acs_values' in stats:
-                del stats['acs_values']
-            if 'kd_ratios' in stats:
-                del stats['kd_ratios']
-            if 'adr_values' in stats:
-                del stats['adr_values']
-            if 'kpr_values' in stats:
-                del stats['kpr_values']
-            if 'apr_values' in stats:
-                del stats['apr_values']
-            if 'fkpr_values' in stats:
-                del stats['fkpr_values']
-            if 'fdpr_values' in stats:
-                del stats['fdpr_values']
-            if 'headshot_pcts' in stats:
-                del stats['headshot_pcts']
+            for key in ['ratings', 'acs_values', 'kd_ratios', 'adr_values', 'kpr_values', 'apr_values', 'fkpr_values', 'fdpr_values', 'headshot_pcts']:
+                if key in stats:
+                    del stats[key]
         
         result = list(map_stats.values())
-        if len(result) > 0 and processed_rows <= 3:
-            print(f"    ✅ [MAP_STATS] {player_name}: Processed {processed_rows} rows, found {len(result)} unique maps")
-        
+       
         return result
     
     def get_player_timeseries(self, player_name):
@@ -415,4 +418,3 @@ class PlayerService:
         """Perform clustering on players"""
         # Clustering implementation
         return {"clustering": "Not implemented yet"}
-

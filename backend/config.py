@@ -13,7 +13,7 @@ def filter_by_tournament(df, tournament="Valorant Champions 2025"):
         return df[df['Tournament'] == tournament].copy()
     return df
 
-DATA_DIR = "data"
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 
 def generate_match_id_from_row(row: dict):
     """Generate unique match ID from row data"""

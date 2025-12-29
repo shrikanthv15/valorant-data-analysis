@@ -1,53 +1,56 @@
 import React, { useState, useEffect } from 'react';
-
-interface Player {
-  name: string;
-  team: string;
-  kills: number;
-  deaths: number;
-  assists: number;
-  kd: number;
-  agent: string;
-  acs: number;
-  maps: string[];
-}
+import { PlayerProfile } from './types';
+import '../../css/Players.css';
 
 interface PlayersProps {
   matchId?: string;
 }
 
-// ✅ Main component with default export
 const Players: React.FC<PlayersProps> = ({ matchId }) => {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMap, setSelectedMap] = useState<string>('all');
   const [availableMaps, setAvailableMaps] = useState<string[]>(['all']);
   const [sortBy, setSortBy] = useState<'kd' | 'kills' | 'acs'>('kd');
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [filterTeam, setFilterTeam] = useState<string>('all');
 
   useEffect(() => {
     fetchPlayers();
-  }, [matchId, selectedMap]);
+  }, [matchId]);
 
   const fetchPlayers = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const endpoint = matchId 
+      const endpoint = matchId
         ? `http://localhost:5000/api/players/${matchId}`
         : 'http://localhost:5000/api/players';
-      
-      const params = selectedMap !== 'all' ? `?map=${selectedMap}` : '';
-      const response = await fetch(`${endpoint}${params}`);
-      
+
+      const response = await fetch(endpoint);
+
       if (!response.ok) throw new Error('Failed to fetch players');
-      
+
       const data = await response.json();
-      
-      setPlayers(data.players || []);
-      setAvailableMaps(['all', ...(data.maps || [])]);
+
+      let playersList: PlayerProfile[] = [];
+
+      if (Array.isArray(data)) {
+        playersList = data;
+      } else if (data.players) {
+        playersList = data.players;
+      }
+
+      const allMaps = new Set<string>();
+      playersList.forEach(p => {
+        p.map_stats.forEach(m => allMaps.add(m.map));
+      });
+      const mapsList = Array.from(allMaps).sort();
+
+      setPlayers(playersList);
+      setAvailableMaps(['all', ...mapsList]);
       setLoading(false);
     } catch (err: any) {
       setError(err.message);
@@ -55,164 +58,213 @@ const Players: React.FC<PlayersProps> = ({ matchId }) => {
     }
   };
 
+  const getPlayerStats = (player: PlayerProfile) => {
+    if (selectedMap === 'all') {
+      return {
+        kills: player.total_kills,
+        deaths: player.total_deaths,
+        assists: player.total_assists,
+        kd: player.kd_ratio,
+        acs: player.average_acs,
+        agent: player.map_stats.flatMap(m => m.agents_played).slice(0, 3).join(', '),
+        maps: player.map_stats.map(m => m.map),
+        headshot: player.map_stats.length > 0
+          ? Math.round(player.map_stats.reduce((acc, m) => acc + m.average_headshot_pct, 0) / player.map_stats.length)
+          : 0,
+        adr: player.map_stats.length > 0
+          ? Math.round(player.map_stats.reduce((acc, m) => acc + m.average_adr, 0) / player.map_stats.length)
+          : 0
+      };
+    } else {
+      const mapStats = player.map_stats.find(m => m.map === selectedMap);
+      if (mapStats) {
+        return {
+          kills: mapStats.total_kills,
+          deaths: mapStats.total_deaths,
+          assists: mapStats.total_assists,
+          kd: mapStats.kd_ratio,
+          acs: mapStats.average_acs,
+          agent: mapStats.agents_played.join(', '),
+          maps: [mapStats.map],
+          headshot: mapStats.average_headshot_pct,
+          adr: mapStats.average_adr
+        };
+      } else {
+        return null;
+      }
+    }
+  };
+
+  const toggleExpand = (playerId: string) => {
+    setExpandedPlayerId(expandedPlayerId === playerId ? null : playerId);
+  };
+
   const sortedPlayers = [...players].sort((a, b) => {
+    const statsA = getPlayerStats(a);
+    const statsB = getPlayerStats(b);
+
+    if (!statsA && !statsB) return 0;
+    if (!statsA) return 1;
+    if (!statsB) return -1;
+
     switch (sortBy) {
       case 'kills':
-        return b.kills - a.kills;
+        return statsB.kills - statsA.kills;
       case 'acs':
-        return b.acs - a.acs;
+        return statsB.acs - statsA.acs;
       case 'kd':
       default:
-        return b.kd - a.kd;
+        return statsB.kd - statsA.kd;
     }
   });
 
-  const filteredPlayers = filterTeam === 'all' 
-    ? sortedPlayers 
-    : sortedPlayers.filter(p => p.team === filterTeam);
+  const teams = [...new Set(players.map(p => p.current_team))];
+  const teamA = teams[0] || 'Team A';
+  const teamB = teams[1] || 'Team B';
 
-  const teams = [...new Set(players.map(p => p.team))];
+  const teamAPlayers = sortedPlayers.filter(p => p.current_team === teamA);
+  const teamBPlayers = sortedPlayers.filter(p => p.current_team === teamB);
 
-  if (loading) {
+  const renderPlayerCard = (player: PlayerProfile) => {
+    const stats = getPlayerStats(player);
+    if (!stats) return null;
+
+    const isExpanded = expandedPlayerId === player.id;
+    const kdClass = stats.kd >= 1.5 ? 'kd-high' : stats.kd >= 1.0 ? 'kd-med' : 'kd-low';
+
     return (
-      <div className="players-container">
-        <div className="loading">Loading players data...</div>
-      </div>
-    );
-  }
+      <div
+        key={player.id}
+        className={`player-card ${isExpanded ? 'expanded' : ''}`}
+        onClick={() => toggleExpand(player.id)}
+      >
+        <div className="card-main">
+          <div className="player-avatar">
+            {/* Placeholder for agent icon or player image */}
+            👤
+          </div>
+          <div className="player-info">
+            <h4 className="player-name">{player.name}</h4>
+            <span className="player-agent">{stats.agent}</span>
+          </div>
 
-  if (error) {
-    return (
-      <div className="players-container">
-        <div className="error">
-          <h3>Error loading players: {error}</h3>
-          <p>Check if your Flask backend is running on http://localhost:5000</p>
+          <div className="quick-stats">
+            <div className="quick-stat">
+              <span className="q-label">K/D</span>
+              <span className={`q-value ${kdClass}`}>{stats.kd.toFixed(2)}</span>
+            </div>
+            <div className="quick-stat">
+              <span className="q-label">ACS</span>
+              <span className="q-value">{Math.round(stats.acs)}</span>
+            </div>
+          </div>
+
+          <div className="expand-icon">▼</div>
         </div>
-      </div>
-    );
-  }
 
-  if (players.length === 0) {
-    return (
-      <div className="players-container">
-        <div className="no-data">
-          <h3>No players found.</h3>
-          <p>No players found{selectedMap !== 'all' ? ` on ${selectedMap}` : ''}.</p>
-          {selectedMap !== 'all' && (
-            <button onClick={() => setSelectedMap('all')}>
-              Try selecting "All Maps" to see all players.
-            </button>
+        <div className="card-details">
+          <div className="details-grid">
+            <div className="detail-item">
+              <span className="detail-label">Kills</span>
+              <span className="detail-value">{Math.round(stats.kills)}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Deaths</span>
+              <span className="detail-value">{Math.round(stats.deaths)}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Assists</span>
+              <span className="detail-value">{Math.round(stats.assists)}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">HS%</span>
+              <span className="detail-value">{stats.headshot}%</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">ADR</span>
+              <span className="detail-value">{stats.adr}</span>
+            </div>
+            {/* Add more stats as needed */}
+          </div>
+
+          {selectedMap === 'all' && stats.maps && stats.maps.length > 0 && (
+            <div className="maps-section">
+              <span className="maps-label">Maps Played</span>
+              <div className="maps-list">
+                {stats.maps.map((map, i) => (
+                  <span key={i} className="map-badge">{map}</span>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
     );
-  }
+  };
+
+  if (loading) return <div className="loading">Loading players...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="players-container">
       <div className="players-header">
-        <h2>🎮 Players Performance</h2>
-        
-        {/* Map Filter */}
-        <div className="filter-group">
-          <label>Map:</label>
-          <select 
-            value={selectedMap} 
-            onChange={(e) => setSelectedMap(e.target.value)}
-            className="filter-select"
-          >
-            {availableMaps.map(map => (
-              <option key={map} value={map}>
-                {map === 'all' ? 'All Maps' : map}
-              </option>
-            ))}
-          </select>
-        </div>
+        <h2>👥 Player Performance</h2>
 
-        {/* Team Filter */}
-        <div className="filter-group">
-          <label>Team:</label>
-          <select 
-            value={filterTeam} 
-            onChange={(e) => setFilterTeam(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">All Teams</option>
-            {teams.map(team => (
-              <option key={team} value={team}>{team}</option>
-            ))}
-          </select>
-        </div>
+        <div className="players-controls">
+          <div className="control-group">
+            <span className="control-label">Map</span>
+            <select
+              value={selectedMap}
+              onChange={(e) => setSelectedMap(e.target.value)}
+              className="control-select"
+            >
+              {availableMaps.map(map => (
+                <option key={map} value={map}>
+                  {map === 'all' ? 'All Maps' : map}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Sort Options */}
-        <div className="filter-group">
-          <label>Sort by:</label>
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value as 'kd' | 'kills' | 'acs')}
-            className="filter-select"
-          >
-            <option value="kd">K/D Ratio</option>
-            <option value="kills">Kills</option>
-            <option value="acs">ACS</option>
-          </select>
+          <div className="control-group">
+            <span className="control-label">Sort</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="control-select"
+            >
+              <option value="kd">K/D Ratio</option>
+              <option value="kills">Total Kills</option>
+              <option value="acs">ACS</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="players-grid">
-        {filteredPlayers.map((player, idx) => (
-          <div key={idx} className="player-card">
-            <div className="player-header">
-              <div className="player-avatar">👤</div>
-              <div className="player-info">
-                <h3 className="player-name">{player.name}</h3>
-                <p className="player-team">{player.team}</p>
-                <p className="player-agent">{player.agent}</p>
-              </div>
-            </div>
-
-            <div className="player-stats">
-              <div className="stat-item">
-                <span className="stat-label">K/D</span>
-                <span className="stat-value kd">{player.kd.toFixed(2)}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Kills</span>
-                <span className="stat-value kills">{player.kills}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Deaths</span>
-                <span className="stat-value deaths">{player.deaths}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Assists</span>
-                <span className="stat-value assists">{player.assists}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">ACS</span>
-                <span className="stat-value acs">{player.acs}</span>
-              </div>
-            </div>
-
-            {player.maps && player.maps.length > 0 && (
-              <div className="player-maps">
-                <span className="maps-label">Maps:</span>
-                <div className="maps-list">
-                  {player.maps.map((map, i) => (
-                    <span key={i} className="map-badge">{map}</span>
-                  ))}
-                </div>
-              </div>
-            )}
+      <div className="teams-container">
+        {/* Team A Column */}
+        <div className="team-section team-a">
+          <div className="team-header">
+            <h3>{teamA}</h3>
           </div>
-        ))}
+          <div className="players-list">
+            {teamAPlayers.map(renderPlayerCard)}
+          </div>
+        </div>
+
+        {/* Team B Column */}
+        <div className="team-section team-b">
+          <div className="team-header">
+            <h3>{teamB}</h3>
+          </div>
+          <div className="players-list">
+            {teamBPlayers.map(renderPlayerCard)}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-// ✅ Default export for easy import
 export default Players;
-
-// ✅ Also export the interface if needed elsewhere
-export type { Player, PlayersProps };
+export type { PlayersProps };

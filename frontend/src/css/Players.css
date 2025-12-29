@@ -1,0 +1,322 @@
+/* Players.css */
+
+/* Container & Header */
+.players-container {
+  padding: 20px;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.players-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.players-header h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.players-controls {
+  display: flex;
+  gap: 20px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.control-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.control-select {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.control-select:hover {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Teams Layout */
+.teams-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.team-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.team-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  border-bottom: 2px solid;
+  margin-bottom: 10px;
+}
+
+.team-header h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* Team Colors */
+.team-section.team-a .team-header {
+  border-color: var(--accent-blue);
+}
+
+.team-section.team-a h3 {
+  color: var(--accent-blue);
+  text-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+}
+
+.team-section.team-b .team-header {
+  border-color: var(--accent-red);
+}
+
+.team-section.team-b h3 {
+  color: var(--accent-red);
+  text-shadow: 0 0 15px rgba(255, 70, 85, 0.4);
+}
+
+/* Player Card */
+.player-card {
+  background: rgba(20, 20, 20, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--text-muted);
+  transition: all 0.3s ease;
+}
+
+.team-section.team-a .player-card:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.team-section.team-a .player-card::before {
+  background: var(--accent-blue);
+}
+
+.team-section.team-b .player-card:hover {
+  border-color: rgba(255, 70, 85, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.team-section.team-b .player-card::before {
+  background: var(--accent-red);
+}
+
+/* Card Content - Collapsed */
+.card-main {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  gap: 20px;
+}
+
+.player-avatar {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.player-agent {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.quick-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.q-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.q-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.q-value.kd-high { color: var(--accent-green); }
+.q-value.kd-med { color: var(--accent-gold); }
+.q-value.kd-low { color: var(--text-secondary); }
+
+.expand-icon {
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+}
+
+.player-card.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* Card Content - Expanded */
+.card-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.player-card.expanded .card-details {
+  max-height: 500px; /* Arbitrary large height for animation */
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  padding: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.detail-value {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.maps-section {
+  padding: 0 20px 20px;
+}
+
+.maps-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.maps-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.map-badge {
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .teams-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .players-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .players-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

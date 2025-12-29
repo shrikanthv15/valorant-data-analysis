@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { MatchData } from './types';
+import React, { useState, useMemo } from 'react';
+import { MatchData, PlayerVsEnemy } from './types';
+import '../../css/Duels.css';
 
 interface DuelsSectionProps {
   details: MatchData;
@@ -7,16 +8,94 @@ interface DuelsSectionProps {
 
 const DuelsSection: React.FC<DuelsSectionProps> = ({ details }) => {
   const { match, player_vs_enemy } = details;
-  const [showStats, setShowStats] = useState(false);
+  const [selectedMap, setSelectedMap] = useState<string>('All Maps');
+  const [selectedKillType, setSelectedKillType] = useState<string>('All Kills');
 
-  if (!player_vs_enemy || !Array.isArray(player_vs_enemy) || player_vs_enemy.length === 0) {
+  // Extract available maps and kill types
+  const { availableMaps, availableKillTypes } = useMemo(() => {
+    if (!player_vs_enemy) return { availableMaps: ['All Maps'], availableKillTypes: ['All Kills'] };
+
+    const maps = new Set<string>(player_vs_enemy.map(d => d.Map).filter(Boolean));
+    const killTypes = new Set<string>(player_vs_enemy.map(d => d["Kill Type"]).filter(Boolean));
+
+    return {
+      availableMaps: ['All Maps', ...Array.from(maps).sort()],
+      availableKillTypes: Array.from(killTypes).sort()
+    };
+  }, [player_vs_enemy]);
+
+  // Filter duels based on selection
+  const filteredDuels = useMemo(() => {
+    if (!player_vs_enemy) return [];
+    return player_vs_enemy.filter(d =>
+      d.Map === selectedMap &&
+      d["Kill Type"] === selectedKillType
+    );
+  }, [player_vs_enemy, selectedMap, selectedKillType]);
+
+  // Organize data for Matrix
+  const { teamAPlayers, teamBPlayers, duelMap } = useMemo(() => {
+    const teamA = match["Team A"];
+    const teamB = match["Team B"];
+    const tAPlayers = new Set<string>();
+    const tBPlayers = new Set<string>();
+    const dMap = new Map<string, PlayerVsEnemy>();
+
+    // We need to scan ALL duels to get the full player list, not just filtered ones
+    // otherwise players might disappear if they have no kills in a specific category
+    if (player_vs_enemy) {
+      player_vs_enemy.forEach(duel => {
+        if (duel["Player Team"] === teamA) {
+          tAPlayers.add(duel.Player);
+          tBPlayers.add(duel.Enemy);
+        } else if (duel["Player Team"] === teamB) {
+          tAPlayers.add(duel.Enemy);
+          tBPlayers.add(duel.Player);
+        }
+      });
+    }
+
+    filteredDuels.forEach(duel => {
+      let pA = '', pB = '';
+      let stats = duel;
+
+      if (duel["Player Team"] === teamA) {
+        pA = duel.Player;
+        pB = duel.Enemy;
+      } else if (duel["Player Team"] === teamB) {
+        pA = duel.Enemy;
+        pB = duel.Player;
+        // Normalize stats to A vs B perspective
+        stats = {
+          ...duel,
+          Player: pA,
+          Enemy: pB,
+          "Player Team": teamA,
+          "Enemy Team": teamB,
+          "Player Kills": duel["Enemy Kills"],
+          "Enemy Kills": duel["Player Kills"],
+          Difference: -duel.Difference
+        };
+      }
+
+      if (pA && pB) {
+        dMap.set(`${pA}-${pB}`, stats);
+      }
+    });
+
+    return {
+      teamAPlayers: Array.from(tAPlayers).sort(),
+      teamBPlayers: Array.from(tBPlayers).sort(),
+      duelMap: dMap
+    };
+  }, [filteredDuels, player_vs_enemy, match]);
+
+  if (!player_vs_enemy || player_vs_enemy.length === 0) {
     return (
       <section className="content-section duels-section">
-        <h2 className="section-title">Individual Combat Analysis</h2>
+        <h2 className="section-title">⚔️ Combat Analysis</h2>
         <div className="no-data-message">
-          <div className="no-data-icon">⚔️</div>
           <h3>No Combat Data Available</h3>
-          <p>Individual player vs player statistics are not available for this match.</p>
         </div>
       </section>
     );
@@ -24,121 +103,89 @@ const DuelsSection: React.FC<DuelsSectionProps> = ({ details }) => {
 
   return (
     <section className="content-section duels-section">
-      <h2 className="section-title">Individual Combat Analysis</h2>
-      
-      <div className="team-duels-container">
-        <div className="team-duel-section">
-          <h3 className="team-duel-header team-a-header">
-            <span className="team-icon">🔵</span>
-            {match["Team A"]} Combat Record
-          </h3>
-          <div className="duels-grid">
-            {player_vs_enemy
-              .filter(duel => duel["Player Team"] === match["Team A"])
-              .slice(0, showStats ? undefined : 8)
-              .map((duel, idx) => (
-              <div key={`team-a-${idx}`} className="duel-card team-a-duel">
-                <div className="duel-header">
-                  <div className="player-name">{duel.Player}</div>
-                  <div className="vs-indicator">VS</div>
-                  <div className="enemy-name">{duel.Enemy}</div>
-                </div>
-                
-                <div className="duel-stats">
-                  <div className="stat-item">
-                    <div className="stat-value kills">{duel["Player Kills"] || 0}</div>
-                    <div className="stat-label">Eliminations</div>
-                  </div>
-                  <div className="stat-divider">-</div>
-                  <div className="stat-item">
-                    <div className="stat-value deaths">{duel["Enemy Kills"] || 0}</div>
-                    <div className="stat-label">Deaths</div>
-                  </div>
-                </div>
-                
-                <div className="duel-result">
-                  <div className={`result-badge ${(duel.Difference || 0) >= 0 ? 'win' : 'loss'}`}>
-                    {(duel.Difference || 0) >= 0 ? 'W' : 'L'}
-                  </div>
-                  <div className="difference-value">
-                    {(duel.Difference || 0) >= 0 ? '+' : ''}{duel.Difference || 0}
-                  </div>
-                </div>
-              </div>
+      <div className="duels-container">
+        <div className="duels-controls">
+          {/* Map Tabs */}
+          <div className="map-tabs">
+            {availableMaps.map(map => (
+              <button
+                key={map}
+                className={`map-tab ${selectedMap === map ? 'active' : ''}`}
+                onClick={() => setSelectedMap(map)}
+              >
+                {map}
+              </button>
+            ))}
+          </div>
+
+          {/* Kill Type Tabs */}
+          <div className="kill-type-tabs">
+            {availableKillTypes.map(type => (
+              <button
+                key={type}
+                className={`kill-type-tab ${selectedKillType === type ? 'active' : ''}`}
+                onClick={() => setSelectedKillType(type)}
+              >
+                {type}
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="team-duel-section">
-          <h3 className="team-duel-header team-b-header">
-            <span className="team-icon">🔴</span>
-            {match["Team B"]} Combat Record
-          </h3>
-          <div className="duels-grid">
-            {player_vs_enemy
-              .filter(duel => duel["Player Team"] === match["Team B"])
-              .slice(0, showStats ? undefined : 8)
-              .map((duel, idx) => (
-              <div key={`team-b-${idx}`} className="duel-card team-b-duel">
-                <div className="duel-header">
-                  <div className="player-name">{duel.Player}</div>
-                  <div className="vs-indicator">VS</div>
-                  <div className="enemy-name">{duel.Enemy}</div>
-                </div>
-                
-                <div className="duel-stats">
-                  <div className="stat-item">
-                    <div className="stat-value kills">{duel["Player Kills"] || 0}</div>
-                    <div className="stat-label">Eliminations</div>
-                  </div>
-                  <div className="stat-divider">-</div>
-                  <div className="stat-item">
-                    <div className="stat-value deaths">{duel["Enemy Kills"] || 0}</div>
-                    <div className="stat-label">Deaths</div>
-                  </div>
-                </div>
-                
-                <div className="duel-result">
-                  <div className={`result-badge ${(duel.Difference || 0) >= 0 ? 'win' : 'loss'}`}>
-                    {(duel.Difference || 0) >= 0 ? 'W' : 'L'}
-                  </div>
-                  <div className="difference-value">
-                    {(duel.Difference || 0) >= 0 ? '+' : ''}{duel.Difference || 0}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <div className="duels-matrix-container">
+          <table className="duels-matrix">
+            <thead>
+              <tr>
+                <th className="matrix-corner"></th>
+                {teamBPlayers.map(player => (
+                  <th key={player} className="matrix-col-header">
+                    <div className="player-header-content">
+                      <div className="player-icon">⚔️</div>
+                      <span className="player-name">{player}</span>
+                      <span className="team-sublabel">{match["Team B"]}</span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {teamAPlayers.map(playerA => (
+                <tr key={playerA}>
+                  <th className="matrix-row-header">
+                    <div className="row-header-content">
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="player-name">{playerA}</div>
+                        <div className="team-sublabel">{match["Team A"]}</div>
+                      </div>
+                      <div className="player-icon">👤</div>
+                    </div>
+                  </th>
+                  {teamBPlayers.map(playerB => {
+                    const duel = duelMap.get(`${playerA}-${playerB}`);
 
-      {player_vs_enemy.length > 16 && (
-        <div className="show-more-container">
-          <button className="show-more-btn" onClick={() => setShowStats(!showStats)}>
-            {showStats ? 'Show Less Duels' : `Show All ${player_vs_enemy.length} Individual Duels`}
-          </button>
-        </div>
-      )}
+                    if (!duel) {
+                      return <td key={playerB} className="matrix-cell cell-empty">-</td>;
+                    }
 
-      <div className="combat-summary">
-        <h3 className="summary-title">Combat Summary</h3>
-        <div className="summary-stats">
-          <div className="summary-stat">
-            <div className="summary-value">{player_vs_enemy.length}</div>
-            <div className="summary-label">Total Duels</div>
-          </div>
-          <div className="summary-stat">
-            <div className="summary-value">
-              {player_vs_enemy.filter(d => (d.Difference || 0) > 0).length}
-            </div>
-            <div className="summary-label">Winning Duels</div>
-          </div>
-          <div className="summary-stat">
-            <div className="summary-value">
-              {player_vs_enemy.reduce((sum, d) => sum + (d["Player Kills"] || 0), 0)}
-            </div>
-            <div className="summary-label">Total Eliminations</div>
-          </div>
+                    const kills = duel["Player Kills"];
+                    const deaths = duel["Enemy Kills"];
+                    const diff = duel.Difference;
+                    const diffClass = diff > 0 ? 'cell-positive' : diff < 0 ? 'cell-negative' : 'cell-neutral';
+
+                    return (
+                      <td key={playerB} className={`matrix-cell ${diffClass}`}>
+                        <div className="cell-content">
+                          <span className="stat-value">{kills}</span>
+                          <span className="stat-value">{deaths}</span>
+                          <span className="diff-value">{diff > 0 ? '+' : ''}{diff}</span>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -146,4 +193,3 @@ const DuelsSection: React.FC<DuelsSectionProps> = ({ details }) => {
 };
 
 export default DuelsSection;
-

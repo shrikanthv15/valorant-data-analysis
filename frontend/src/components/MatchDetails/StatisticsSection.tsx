@@ -25,7 +25,7 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
   return (
     <section className="content-section stats-section">
       <h2 className="section-title">📊 Advanced Match Statistics</h2>
-      
+
       <div className="advanced-stats-container">
         <div className="stats-overview">
           <div className="stat-card">
@@ -69,7 +69,7 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
                 <div className="performer-stat">{statistics.top_performers.most_kills.total_kills} kills</div>
               </div>
             </div>
-            
+
             <div className="performer-card multi-kills">
               <div className="performer-icon">💥</div>
               <div className="performer-content">
@@ -78,7 +78,7 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
                 <div className="performer-stat">{statistics.top_performers.most_multi_kills.total_multi_kills} multi-kills</div>
               </div>
             </div>
-            
+
             <div className="performer-card consistency">
               <div className="performer-icon">⭐</div>
               <div className="performer-content">
@@ -94,53 +94,53 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
           <h3 className="section-subtitle">👥 Player Performance Analysis</h3>
           <div className="players-detailed-stats">
             {statistics.players
-              .sort((a, b) => b.total_kills - a.total_kills)
-              .map((player, idx) => (
-              <div key={idx} className="player-detailed-card">
-                <div className="player-header">
-                  <div className="player-info">
-                    <div className="player-name">{player.player}</div>
-                    <div className={`player-team ${player.team === match["Team A"] ? 'team-a' : 'team-b'}`}>
-                      {player.team}
+              .sort((a: any, b: any) => b.total_kills - a.total_kills)
+              .map((player: any, idx: number) => (
+                <div key={idx} className="player-detailed-card">
+                  <div className="player-header">
+                    <div className="player-info">
+                      <div className="player-name">{player.player}</div>
+                      <div className={`player-team ${player.team === match["Team A"] ? 'team-a' : 'team-b'}`}>
+                        {player.team}
+                      </div>
+                    </div>
+                    <div className="player-total-kills">{player.total_kills}</div>
+                  </div>
+
+                  <div className="player-stats-breakdown">
+                    <div className="multi-kills-breakdown">
+                      <div className="multi-kill-stat">
+                        <span className="mk-label">2K</span>
+                        <span className="mk-value">{player.multi_kills['2k']}</span>
+                      </div>
+                      <div className="multi-kill-stat">
+                        <span className="mk-label">3K</span>
+                        <span className="mk-value">{player.multi_kills['3k']}</span>
+                      </div>
+                      <div className="multi-kill-stat">
+                        <span className="mk-label">4K</span>
+                        <span className="mk-value">{player.multi_kills['4k']}</span>
+                      </div>
+                      <div className="multi-kill-stat">
+                        <span className="mk-label">5K</span>
+                        <span className="mk-value">{player.multi_kills['5k']}</span>
+                      </div>
+                    </div>
+
+                    <div className="performance-bar">
+                      <div className="bar-container">
+                        <div
+                          className="bar-fill"
+                          style={{
+                            width: `${(player.total_kills / Math.max(...statistics.players.map((p: any) => p.total_kills))) * 100}%`
+                          }}
+                        ></div>
+                        <span className="bar-label">K/R: {player.avg_kills_per_round}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="player-total-kills">{player.total_kills}</div>
                 </div>
-                
-                <div className="player-stats-breakdown">
-                  <div className="multi-kills-breakdown">
-                    <div className="multi-kill-stat">
-                      <span className="mk-label">2K</span>
-                      <span className="mk-value">{player.multi_kills['2k']}</span>
-                    </div>
-                    <div className="multi-kill-stat">
-                      <span className="mk-label">3K</span>
-                      <span className="mk-value">{player.multi_kills['3k']}</span>
-                    </div>
-                    <div className="multi-kill-stat">
-                      <span className="mk-label">4K</span>
-                      <span className="mk-value">{player.multi_kills['4k']}</span>
-                    </div>
-                    <div className="multi-kill-stat">
-                      <span className="mk-label">5K</span>
-                      <span className="mk-value">{player.multi_kills['5k']}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="performance-bar">
-                    <div className="bar-container">
-                      <div 
-                        className="bar-fill" 
-                        style={{
-                          width: `${(player.total_kills / Math.max(...statistics.players.map(p => p.total_kills))) * 100}%`
-                        }}
-                      ></div>
-                      <span className="bar-label">K/R: {player.avg_kills_per_round}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 
@@ -148,31 +148,31 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
           <h3 className="section-subtitle">⚗️ Agent Performance Meta</h3>
           <div className="agent-stats-grid">
             {statistics.agents
-              .sort((a, b) => b.total_kills - a.total_kills)
+              .sort((a: any, b: any) => b.total_kills - a.total_kills)
               .slice(0, 8)
-              .map((agent, idx) => (
-              <div key={idx} className="agent-meta-card">
-                <div className="agent-header">
-                  <div className="agent-name">{agent.agent}</div>
-                  <div className="usage-rate">{agent.usage_rate}%</div>
-                </div>
-                
-                <div className="agent-kills-total">{agent.total_kills} eliminations</div>
-                
-                <div className="agent-multi-kills">
-                  <div className="agent-mk-grid">
-                    {Object.entries(agent.multi_kills).map(([type, count]) => (
-                      count > 0 && (
-                        <div key={type} className="agent-mk-item">
-                          <span className="mk-type">{type}</span>
-                          <span className="mk-count">{count}</span>
-                        </div>
-                      )
-                    ))}
+              .map((agent: any, idx: number) => (
+                <div key={idx} className="agent-meta-card">
+                  <div className="agent-header">
+                    <div className="agent-name">{agent.agent}</div>
+                    <div className="usage-rate">{agent.usage_rate}%</div>
+                  </div>
+
+                  <div className="agent-kills-total">{agent.total_kills} eliminations</div>
+
+                  <div className="agent-multi-kills">
+                    <div className="agent-mk-grid">
+                      {Object.entries(agent.multi_kills).map(([type, count]) => (
+                        (count as number) > 0 && (
+                          <div key={type} className="agent-mk-item">
+                            <span className="mk-type">{type}</span>
+                            <span className="mk-count">{count as number}</span>
+                          </div>
+                        )
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 
@@ -199,9 +199,9 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
                 </div>
               </div>
             </div>
-            
+
             <div className="vs-divider">VS</div>
-            
+
             <div className="team-comparison-card team-b-card">
               <div className="team-header">
                 <div className="team-icon">🔴</div>
@@ -230,4 +230,3 @@ const StatisticsSection: React.FC<StatisticsSectionProps> = ({ roundsData, match
 };
 
 export default StatisticsSection;
-

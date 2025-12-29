@@ -36,8 +36,6 @@ class MatchService:
         # Get player kills data
         player_kills = kills_df[
             (kills_df['Match Type'] == match_type) &  
-            (kills_df['Kill Type'] == 'All Kills') & 
-            (kills_df['Map'] == 'All Maps') & 
             (
                 (kills_df['Match Name'] == match_name_1) |
                 (kills_df['Match Name'] == match_name_2)
@@ -98,6 +96,7 @@ class MatchService:
                 (rounds_kills_df['Match Name'] == match_name_2)
             )
         ]
+
         print(rounds_data['Map'])
         map_scores = maps_scores_df[
             (maps_scores_df["Match Name"] == match_name_1) |
@@ -165,17 +164,32 @@ class MatchService:
     
     def _process_player_stats(self, player_kills):
         """Process player statistics"""
-        player_stats = player_kills.groupby(['Player Team', 'Player', "Enemy Team"]).agg({
+        # Filter for All Maps for general stats to avoid duplication if needed, 
+        # BUT the original code was aggregating. 
+        # If player_kills now has all maps, simple aggregation might double count if 'All Maps' rows exist.
+        # We should filter for 'All Maps' here if we want overall stats, OR sum up specific maps.
+        # Assuming 'All Maps' rows exist and we want to use them for overall stats:
+        
+        overall_kills = player_kills[player_kills['Map'] == 'All Maps']
+        if overall_kills.empty:
+             # Fallback if no 'All Maps' rows (unlikely given previous code)
+             overall_kills = player_kills
+             
+        player_stats = overall_kills.groupby(['Player Team', 'Player', "Enemy Team"]).agg({
             'Player Kills': 'sum',
             'Enemy Kills': 'sum', 
             'Difference': 'sum',
             'Enemy': lambda x: list(x)
         }).reset_index()
-        return player_stats.to_dict('records')
+        return player_stats.fillna(0).to_dict('records')
     
     def _process_enemy_stats(self, player_kills):
         """Process enemy statistics"""
-        enemy_stats = player_kills.groupby(['Enemy Team', 'Enemy', "Player Team"]).agg({
+        overall_kills = player_kills[player_kills['Map'] == 'All Maps']
+        if overall_kills.empty:
+             overall_kills = player_kills
+
+        enemy_stats = overall_kills.groupby(['Enemy Team', 'Enemy', "Player Team"]).agg({
             'Player Kills': 'sum',
             'Enemy Kills': 'sum', 
             'Difference': 'sum',
@@ -188,18 +202,19 @@ class MatchService:
             "Enemy Team": "Player Team", 
             'Player': 'Enemy'
         })
-        return enemy_stats.to_dict('records')
+        return enemy_stats.fillna(0).to_dict('records')
     
     def _process_duels(self, player_kills):
         """Process player vs enemy duels"""
-        duels = player_kills.groupby(['Player', 'Enemy']).agg({
-            'Player Kills': 'first',
+        # We want to keep Map information now
+        duels = player_kills.groupby(['Player', 'Enemy', 'Map', 'Kill Type']).agg({
+            'Player Kills': 'first', # Assuming one row per player-enemy-map combo in the source
             'Enemy Kills': 'first',
             'Difference': 'first',
             'Player Team': 'first',
             'Enemy Team': 'first'
         }).reset_index()
-        return duels.to_dict('records')
+        return duels.fillna(0).to_dict('records')
 
     def _process_rounds_analysis(self, rounds_data, onlyroundsData, team_a, team_b):
         """Process rounds grouped by map"""

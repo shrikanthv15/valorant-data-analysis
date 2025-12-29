@@ -1,0 +1,253 @@
+/* Duels.css */
+
+.duels-section {
+    padding: 20px;
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.duels-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tabs Container */
+.duels-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Map Tabs */
+.map-tabs {
+    display: flex;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 5px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.map-tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+.map-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.map-tab.active {
+    background: var(--accent-blue);
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+}
+
+/* Kill Type Tabs */
+.kill-type-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.kill-type-tab {
+    padding: 8px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.kill-type-tab:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.kill-type-tab.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Matrix Table */
+.duels-matrix-container {
+    overflow-x: auto;
+    background: rgba(20, 20, 20, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.duels-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 8px;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* Headers */
+.matrix-corner {
+    background: transparent;
+    border: none;
+}
+
+.matrix-col-header {
+    padding: 10px;
+    text-align: center;
+    vertical-align: bottom;
+}
+
+.matrix-row-header {
+    padding: 10px;
+    text-align: right;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.player-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.row-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.player-name {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+
+.team-sublabel {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.player-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+/* Cells */
+.matrix-cell {
+    padding: 10px 15px;
+    text-align: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.matrix-cell:hover {
+    transform: scale(1.05);
+    z-index: 2;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.cell-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.diff-value {
+    font-size: 1rem;
+    font-weight: 700;
+    width: 24px;
+    text-align: right;
+}
+
+/* Color Coding */
+.cell-positive {
+    background: rgba(74, 222, 128, 0.15);
+    border: 1px solid rgba(74, 222, 128, 0.1);
+}
+
+.cell-positive .diff-value {
+    color: #4ade80;
+}
+
+.cell-positive:hover {
+    background: rgba(74, 222, 128, 0.25);
+    border-color: #4ade80;
+}
+
+.cell-negative {
+    background: rgba(255, 70, 85, 0.15);
+    border: 1px solid rgba(255, 70, 85, 0.1);
+}
+
+.cell-negative .diff-value {
+    color: #ff4655;
+}
+
+.cell-negative:hover {
+    background: rgba(255, 70, 85, 0.25);
+    border-color: #ff4655;
+}
+
+.cell-neutral {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cell-neutral .diff-value {
+    color: var(--text-secondary);
+}
+
+.cell-neutral:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--text-secondary);
+}
+
+.cell-empty {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.1);
+    font-size: 1.5rem;
+}
