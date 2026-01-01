@@ -20,6 +20,10 @@ def create_app() -> Flask:
     app.register_blueprint(match_bp, url_prefix="/api")
     app.register_blueprint(player_bp, url_prefix="/api")
     app.register_blueprint(analytics_bp, url_prefix="/api")
+    
+    # Register general routes at root
+    from routes.general_routes import general_bp
+    app.register_blueprint(general_bp)
 
     return app
 
